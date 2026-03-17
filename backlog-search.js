@@ -1,23 +1,11 @@
 (() => {
   "use strict";
 
-  const SEARCH_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
-  const CLOSE_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-  const COPY_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
-  const CHECK_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-  const SPINNER = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="jr-spinner"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`;
-
-  let panel = null;
+  let injected = false;
   let issueCache = null;
-  let cacheKey = null;
 
   function getBoardId() {
     const match = window.location.href.match(/boards\/(\d+)/);
-    return match ? match[1] : null;
-  }
-
-  function getProjectKey() {
-    const match = window.location.href.match(/projects\/([A-Z]+)/);
     return match ? match[1] : null;
   }
 
@@ -26,8 +14,7 @@
   }
 
   async function fetchAllIssues(boardId) {
-    const key = `board-${boardId}`;
-    if (issueCache && cacheKey === key) return issueCache;
+    if (issueCache) return issueCache;
 
     const allIssues = [];
     let startAt = 0;
@@ -35,7 +22,7 @@
 
     while (true) {
       const resp = await fetch(
-        `/rest/agile/1.0/board/${boardId}/issue?startAt=${startAt}&maxResults=${maxResults}&fields=summary,status,issuetype,priority`,
+        `/rest/agile/1.0/board/${boardId}/issue?startAt=${startAt}&maxResults=${maxResults}&fields=summary,status`,
         { credentials: "same-origin" }
       );
       if (!resp.ok) throw new Error(`API error: ${resp.status}`);
@@ -46,8 +33,6 @@
           key: issue.key,
           summary: issue.fields?.summary || "",
           status: issue.fields?.status?.name || "",
-          type: issue.fields?.issuetype?.name || "",
-          priority: issue.fields?.priority?.name || "",
         });
       }
 
@@ -56,213 +41,134 @@
     }
 
     issueCache = allIssues;
-    cacheKey = key;
     return allIssues;
   }
 
-  function filterIssues(issues, query) {
-    if (!query) return issues;
-    const q = query.toLowerCase();
-    return issues.filter(
-      (i) =>
-        i.key.toLowerCase().includes(q) ||
-        i.summary.toLowerCase().includes(q) ||
-        i.status.toLowerCase().includes(q)
+  function injectSearchableList(issues) {
+    const existing = document.getElementById("jr-searchable-backlog");
+    if (existing) existing.remove();
+
+    const scrollable = document.querySelector(
+      '[data-testid="software-backlog.backlog-content.scrollable"]'
     );
-  }
+    if (!scrollable) return;
 
-  function highlightMatch(text, query) {
-    if (!query) return text;
-    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(`(${escaped})`, "gi");
-    return text.replace(re, "<mark>$1</mark>");
-  }
+    const container = document.createElement("div");
+    container.id = "jr-searchable-backlog";
 
-  function copyKey(key, btn) {
-    navigator.clipboard.writeText(key).catch(() => {
-      const ta = document.createElement("textarea");
-      ta.value = key;
-      ta.style.cssText = "position:fixed;opacity:0;left:-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
+    const header = document.createElement("div");
+    header.className = "jr-sbl-header";
+    header.innerHTML = `<span class="jr-sbl-title">Wszystkie taski (${issues.length})</span>`;
+    header.addEventListener("click", () => {
+      const list = container.querySelector(".jr-sbl-list");
+      const isCollapsed = list.style.display === "none";
+      list.style.display = isCollapsed ? "" : "none";
+      header.querySelector(".jr-sbl-toggle").textContent = isCollapsed
+        ? "\u25BC"
+        : "\u25B6";
     });
-    btn.innerHTML = CHECK_ICON;
-    btn.classList.add("jr-copied");
-    setTimeout(() => {
-      btn.innerHTML = COPY_ICON;
-      btn.classList.remove("jr-copied");
-    }, 1200);
-  }
 
-  function renderResults(container, issues, query) {
-    container.innerHTML = "";
+    const toggle = document.createElement("span");
+    toggle.className = "jr-sbl-toggle";
+    toggle.textContent = "\u25BC";
+    header.prepend(toggle);
 
-    if (issues.length === 0) {
-      container.innerHTML = `<div class="jr-no-results">Brak wynikow</div>`;
-      return;
-    }
+    container.appendChild(header);
 
-    for (const issue of issues.slice(0, 100)) {
+    const list = document.createElement("div");
+    list.className = "jr-sbl-list";
+
+    for (const issue of issues) {
       const row = document.createElement("a");
-      row.className = "jr-result-row";
+      row.className = "jr-sbl-row";
       row.href = `/browse/${issue.key}`;
-      row.target = "_blank";
 
-      const copyBtn = document.createElement("button");
-      copyBtn.className = "jr-result-copy";
-      copyBtn.innerHTML = COPY_ICON;
-      copyBtn.title = issue.key;
-      copyBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        copyKey(issue.key, copyBtn);
-      });
+      const key = document.createElement("span");
+      key.className = "jr-sbl-key";
+      key.textContent = issue.key;
 
-      const keySpan = document.createElement("span");
-      keySpan.className = "jr-result-key";
-      keySpan.innerHTML = highlightMatch(issue.key, query);
+      const summary = document.createElement("span");
+      summary.className = "jr-sbl-summary";
+      summary.textContent = issue.summary;
 
-      const summarySpan = document.createElement("span");
-      summarySpan.className = "jr-result-summary";
-      summarySpan.innerHTML = highlightMatch(issue.summary, query);
+      const status = document.createElement("span");
+      status.className = "jr-sbl-status";
+      status.textContent = issue.status;
 
-      const statusSpan = document.createElement("span");
-      statusSpan.className = "jr-result-status";
-      statusSpan.textContent = issue.status;
-
-      row.appendChild(copyBtn);
-      row.appendChild(keySpan);
-      row.appendChild(summarySpan);
-      row.appendChild(statusSpan);
-      container.appendChild(row);
+      row.appendChild(key);
+      row.appendChild(summary);
+      row.appendChild(status);
+      list.appendChild(row);
     }
+
+    container.appendChild(list);
+
+    // Append inside the scrollable container so Ctrl+F scrolls naturally
+    scrollable.appendChild(container);
   }
 
-  function createPanel() {
-    if (panel) {
-      panel.style.display = "flex";
-      const input = panel.querySelector(".jr-search-input");
-      input?.focus();
-      return;
-    }
+  function showLoadingIndicator() {
+    const scrollable = document.querySelector(
+      '[data-testid="software-backlog.backlog-content.scrollable"]'
+    );
+    if (!scrollable) return;
 
-    panel = document.createElement("div");
-    panel.className = "jr-search-panel";
-    panel.innerHTML = `
-      <div class="jr-search-header">
-        <div class="jr-search-input-wrap">
-          <span class="jr-search-icon">${SEARCH_ICON}</span>
-          <input type="text" class="jr-search-input" placeholder="Szukaj po kluczu, tytule lub statusie..." />
-          <span class="jr-search-count"></span>
-        </div>
-        <button class="jr-search-close">${CLOSE_ICON}</button>
-      </div>
-      <div class="jr-search-loading">${SPINNER} Pobieranie taskow...</div>
-      <div class="jr-search-results"></div>
-    `;
-    document.body.appendChild(panel);
+    const indicator = document.createElement("div");
+    indicator.id = "jr-searchable-loading";
+    indicator.className = "jr-sbl-loading";
+    indicator.textContent = "Ladowanie wszystkich taskow...";
+    scrollable.appendChild(indicator);
+    return indicator;
+  }
 
-    const input = panel.querySelector(".jr-search-input");
-    const results = panel.querySelector(".jr-search-results");
-    const countEl = panel.querySelector(".jr-search-count");
-    const loading = panel.querySelector(".jr-search-loading");
-    const closeBtn = panel.querySelector(".jr-search-close");
-
-    closeBtn.addEventListener("click", () => {
-      panel.style.display = "none";
-    });
-
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        panel.style.display = "none";
-      }
-    });
-
-    // Prevent Jira from capturing our keystrokes
-    input.addEventListener("keydown", (e) => e.stopPropagation());
-    input.addEventListener("keyup", (e) => e.stopPropagation());
-    input.addEventListener("keypress", (e) => e.stopPropagation());
+  async function init() {
+    if (!isBacklogPage()) return;
+    if (injected) return;
 
     const boardId = getBoardId();
-    if (!boardId) {
-      loading.textContent = "Nie znaleziono board ID w URL";
-      return;
-    }
+    if (!boardId) return;
 
-    fetchAllIssues(boardId)
-      .then((issues) => {
-        loading.style.display = "none";
-        countEl.textContent = `${issues.length}`;
-        renderResults(results, issues, "");
-
-        let debounce = null;
-        input.addEventListener("input", () => {
-          if (debounce) clearTimeout(debounce);
-          debounce = setTimeout(() => {
-            const q = input.value.trim();
-            const filtered = filterIssues(issues, q);
-            countEl.textContent = q
-              ? `${filtered.length} / ${issues.length}`
-              : `${issues.length}`;
-            renderResults(results, filtered, q);
-          }, 150);
-        });
-
-        input.focus();
-      })
-      .catch((err) => {
-        loading.textContent = `Blad: ${err.message}`;
-      });
-  }
-
-  function injectTriggerButton() {
-    if (document.querySelector(".jr-search-trigger")) return;
-    if (!isBacklogPage()) return;
-
-    const searchBar = document.querySelector(
-      '[data-testid="software-backlog.header.search-field"]'
+    // Wait for backlog to render
+    const scrollable = document.querySelector(
+      '[data-testid="software-backlog.backlog-content.scrollable"]'
     );
-    const target = searchBar?.parentElement || document.querySelector('[data-testid="software-backlog.backlog"]');
-    if (!target) return;
+    if (!scrollable) return;
 
-    const btn = document.createElement("button");
-    btn.className = "jr-search-trigger";
-    btn.innerHTML = `${SEARCH_ICON} <span>Szukaj wszystko</span>`;
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      createPanel();
-    });
+    injected = true;
+    const loading = showLoadingIndicator();
 
-    target.insertAdjacentElement("afterbegin", btn);
-  }
-
-  function init() {
-    // Keyboard shortcut: Ctrl+Shift+F
-    document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === "F") {
-        e.preventDefault();
-        if (panel?.style.display !== "none" && panel) {
-          panel.style.display = "none";
-        } else {
-          createPanel();
-        }
-      }
-    });
-
-    // Inject trigger button on backlog pages
-    if (isBacklogPage()) {
-      injectTriggerButton();
-      const observer = new MutationObserver(() => injectTriggerButton());
-      observer.observe(document.body, { childList: true, subtree: true });
+    try {
+      const issues = await fetchAllIssues(boardId);
+      if (loading) loading.remove();
+      injectSearchableList(issues);
+    } catch (err) {
+      if (loading) loading.textContent = `Blad: ${err.message}`;
     }
   }
+
+  // Jira is SPA - watch for navigation to backlog
+  let lastUrl = "";
+  function checkNavigation() {
+    if (window.location.href !== lastUrl) {
+      lastUrl = window.location.href;
+      injected = false;
+      const existing = document.getElementById("jr-searchable-backlog");
+      if (existing) existing.remove();
+      if (isBacklogPage()) {
+        setTimeout(() => init(), 1000);
+      }
+    }
+  }
+
+  const observer = new MutationObserver(checkNavigation);
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(() => init(), 1000);
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
   } else {
-    init();
+    setTimeout(() => init(), 1000);
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 })();
