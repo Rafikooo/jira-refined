@@ -56,6 +56,15 @@
 }
 
 /* ============================================
+   Hide Jira's screen-reader duplicate keys from Ctrl+F
+   Jira renders each issue key twice: a 1px screen-reader link
+   and the visible one. This hides the SR copy from browser find.
+   ============================================ */
+[data-testid="software-backlog.card-list.card.card-contents.screen-reader-key"] {
+  visibility: hidden !important;
+}
+
+/* ============================================
    Searchable backlog list (for native Ctrl+F)
    ============================================ */
 

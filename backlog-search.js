@@ -44,6 +44,18 @@
     return allIssues;
   }
 
+  function getRenderedKeys() {
+    const keys = new Set();
+    const visible = document.querySelectorAll(
+      '[data-testid="software-backlog.card-list.card.card-contents.key"]'
+    );
+    for (const el of visible) {
+      const text = el.textContent.trim();
+      if (text) keys.add(text);
+    }
+    return keys;
+  }
+
   function injectSearchableList(issues) {
     const existing = document.getElementById("jr-searchable-backlog");
     if (existing) existing.remove();
@@ -53,12 +65,19 @@
     );
     if (!scrollable) return;
 
+    // Only include issues NOT already rendered by Jira's virtual scroll
+    const renderedKeys = getRenderedKeys();
+    const missing = issues.filter((i) => !renderedKeys.has(i.key));
+
+    // If all issues are already in DOM, don't inject anything
+    if (missing.length === 0) return;
+
     const container = document.createElement("div");
     container.id = "jr-searchable-backlog";
 
     const header = document.createElement("div");
     header.className = "jr-sbl-header";
-    header.innerHTML = `<span class="jr-sbl-title">Wszystkie taski (${issues.length})</span>`;
+    header.innerHTML = `<span class="jr-sbl-title">Pozostale taski (${missing.length} z ${issues.length} - reszta widoczna powyzej)</span>`;
     header.addEventListener("click", () => {
       const list = container.querySelector(".jr-sbl-list");
       const isCollapsed = list.style.display === "none";
@@ -78,7 +97,7 @@
     const list = document.createElement("div");
     list.className = "jr-sbl-list";
 
-    for (const issue of issues) {
+    for (const issue of missing) {
       const row = document.createElement("a");
       row.className = "jr-sbl-row";
       row.href = `/browse/${issue.key}`;
@@ -102,8 +121,6 @@
     }
 
     container.appendChild(list);
-
-    // Append inside the scrollable container so Ctrl+F scrolls naturally
     scrollable.appendChild(container);
   }
 
