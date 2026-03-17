@@ -1,0 +1,57 @@
+.jp-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ds-text-subtlest, #8993a4);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* Show on board card hover */
+[data-testid="platform-board-kit.ui.card.card"]:hover .jp-copy-btn,
+[data-testid="platform-board-kit.ui.swimlane.link-button"]:hover .jp-copy-btn {
+  opacity: 0.6;
+}
+
+/* Show on backlog row hover */
+[data-testid^="software-backlog.card-list.card.content-container"]:hover .jp-copy-btn {
+  opacity: 0.6;
+}
+
+.jp-copy-btn:hover {
+  opacity: 1 !important;
+  color: var(--ds-text, #c7d1db);
+}
+
+.jp-copy-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.jp-copy-btn:active {
+  transform: scale(0.9);
+}
+
+/* Kill focus outline on key containers after copy click */
+[data-testid="platform-card.common.ui.key.key"]:focus-within,
+[data-testid="platform-card.common.ui.key.key"] a:focus,
+[data-testid="software-backlog.card-list.card.card-contents.accessible-card-key"]:focus-within,
+[data-testid="software-backlog.card-list.card.card-contents.accessible-card-key"] a:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Copied feedback - just subtle green checkmark */
+.jp-copy-btn.jp-copied {
+  opacity: 1 !important;
+  color: var(--ds-text-success, #4bce97);
+}
