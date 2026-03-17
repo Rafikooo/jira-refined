@@ -56,12 +56,18 @@
 }
 
 /* ============================================
-   Hide Jira's screen-reader duplicate keys from Ctrl+F
-   Jira renders each issue key twice: a 1px screen-reader link
-   and the visible one. This hides the SR copy from browser find.
+   Hide Jira's duplicate key links from Ctrl+F.
+   Inside each accessible-card-key container, Jira renders
+   multiple <a> tags with the key text. We hide all except
+   the one the user actually sees (the non-aria-hidden one).
    ============================================ */
-[data-testid="software-backlog.card-list.card.card-contents.screen-reader-key"] {
+[data-testid="software-backlog.card-list.card.card-contents.screen-reader-key"],
+[data-testid="software-backlog.card-list.card.card-contents.accessible-card-key"] > a[aria-hidden="true"] {
   visibility: hidden !important;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
 }
 
 /* ============================================
