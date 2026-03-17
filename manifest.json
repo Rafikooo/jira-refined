@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Jira Premium",
+  "name": "Jira Refined",
   "version": "0.1.0",
   "description": "Enhances Jira Cloud with missing UX features - copy task keys, search backlog, and more.",
   "permissions": ["clipboardWrite"],
