@@ -1,7 +1,8 @@
 (() => {
   "use strict";
 
-  let injected = false;
+  let initialized = false;
+  let shadowContainer = null;
   let issueCache = null;
 
   function getBoardId() {
@@ -46,146 +47,124 @@
 
   function getRenderedKeys() {
     const keys = new Set();
-    const visible = document.querySelectorAll(
+    const els = document.querySelectorAll(
       '[data-testid="software-backlog.card-list.card.card-contents.key"]'
     );
-    for (const el of visible) {
+    for (const el of els) {
       const text = el.textContent.trim();
       if (text) keys.add(text);
     }
     return keys;
   }
 
-  function injectSearchableList(issues) {
-    const existing = document.getElementById("jr-searchable-backlog");
-    if (existing) existing.remove();
-
-    const scrollable = document.querySelector(
-      '[data-testid="software-backlog.backlog-content.scrollable"]'
-    );
-    if (!scrollable) return;
-
-    // Only include issues NOT already rendered by Jira's virtual scroll
+  function updateShadowVisibility() {
+    if (!shadowContainer) return;
     const renderedKeys = getRenderedKeys();
-    const missing = issues.filter((i) => !renderedKeys.has(i.key));
-
-    // If all issues are already in DOM, don't inject anything
-    if (missing.length === 0) return;
-
-    const container = document.createElement("div");
-    container.id = "jr-searchable-backlog";
-
-    const header = document.createElement("div");
-    header.className = "jr-sbl-header";
-    header.innerHTML = `<span class="jr-sbl-title">Pozostale taski (${missing.length} z ${issues.length} - reszta widoczna powyzej)</span>`;
-    header.addEventListener("click", () => {
-      const list = container.querySelector(".jr-sbl-list");
-      const isCollapsed = list.style.display === "none";
-      list.style.display = isCollapsed ? "" : "none";
-      header.querySelector(".jr-sbl-toggle").textContent = isCollapsed
-        ? "\u25BC"
-        : "\u25B6";
-    });
-
-    const toggle = document.createElement("span");
-    toggle.className = "jr-sbl-toggle";
-    toggle.textContent = "\u25BC";
-    header.prepend(toggle);
-
-    container.appendChild(header);
-
-    const list = document.createElement("div");
-    list.className = "jr-sbl-list";
-
-    for (const issue of missing) {
-      const row = document.createElement("a");
-      row.className = "jr-sbl-row";
-      row.href = `/browse/${issue.key}`;
-
-      const key = document.createElement("span");
-      key.className = "jr-sbl-key";
-      key.textContent = issue.key;
-
-      const summary = document.createElement("span");
-      summary.className = "jr-sbl-summary";
-      summary.textContent = issue.summary;
-
-      const status = document.createElement("span");
-      status.className = "jr-sbl-status";
-      status.textContent = issue.status;
-
-      row.appendChild(key);
-      row.appendChild(summary);
-      row.appendChild(status);
-      list.appendChild(row);
+    const items = shadowContainer.querySelectorAll("[data-jr-key]");
+    for (const item of items) {
+      const key = item.getAttribute("data-jr-key");
+      if (renderedKeys.has(key)) {
+        // Jira has this in DOM - hide shadow from Ctrl+F
+        item.style.visibility = "hidden";
+        item.style.opacity = "";
+      } else {
+        // Jira doesn't have this - make shadow findable
+        item.style.visibility = "";
+        item.style.opacity = "0";
+      }
     }
-
-    container.appendChild(list);
-    scrollable.appendChild(container);
   }
 
-  function showLoadingIndicator() {
+  function injectShadowList(issues) {
+    if (shadowContainer) shadowContainer.remove();
+
     const scrollable = document.querySelector(
       '[data-testid="software-backlog.backlog-content.scrollable"]'
     );
     if (!scrollable) return;
 
-    const indicator = document.createElement("div");
-    indicator.id = "jr-searchable-loading";
-    indicator.className = "jr-sbl-loading";
-    indicator.textContent = "Ladowanie wszystkich taskow...";
-    scrollable.appendChild(indicator);
-    return indicator;
+    shadowContainer = document.createElement("div");
+    shadowContainer.id = "jr-shadow-backlog";
+    shadowContainer.setAttribute("aria-hidden", "true");
+
+    for (const issue of issues) {
+      const item = document.createElement("a");
+      item.setAttribute("data-jr-key", issue.key);
+      item.href = `/browse/${issue.key}`;
+      item.className = "jr-shadow-item";
+      // Text content makes it findable by Ctrl+F
+      item.textContent = `${issue.key} ${issue.summary}`;
+      shadowContainer.appendChild(item);
+    }
+
+    scrollable.appendChild(shadowContainer);
+    updateShadowVisibility();
+  }
+
+  let updateTimer = null;
+  function scheduleUpdate() {
+    if (updateTimer) return;
+    updateTimer = setTimeout(() => {
+      updateTimer = null;
+      updateShadowVisibility();
+    }, 200);
   }
 
   async function init() {
     if (!isBacklogPage()) return;
-    if (injected) return;
+    if (initialized) return;
 
     const boardId = getBoardId();
     if (!boardId) return;
 
-    // Wait for backlog to render
     const scrollable = document.querySelector(
       '[data-testid="software-backlog.backlog-content.scrollable"]'
     );
     if (!scrollable) return;
 
-    injected = true;
-    const loading = showLoadingIndicator();
+    initialized = true;
 
     try {
       const issues = await fetchAllIssues(boardId);
-      if (loading) loading.remove();
-      injectSearchableList(issues);
+      injectShadowList(issues);
+
+      // Update visibility on scroll (virtual scroll changes rendered items)
+      scrollable.addEventListener("scroll", scheduleUpdate, { passive: true });
+
+      // Update on DOM changes (Jira SPA renders/removes items)
+      const observer = new MutationObserver(scheduleUpdate);
+      observer.observe(scrollable, { childList: true, subtree: true });
     } catch (err) {
-      if (loading) loading.textContent = `Blad: ${err.message}`;
+      console.error("[Jira Refined] Failed to load issues:", err);
     }
   }
 
-  // Jira is SPA - watch for navigation to backlog
+  // Watch for SPA navigation
   let lastUrl = "";
   function checkNavigation() {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
-      injected = false;
-      const existing = document.getElementById("jr-searchable-backlog");
-      if (existing) existing.remove();
+      initialized = false;
+      issueCache = null;
+      if (shadowContainer) {
+        shadowContainer.remove();
+        shadowContainer = null;
+      }
       if (isBacklogPage()) {
         setTimeout(() => init(), 1000);
       }
     }
   }
 
-  const observer = new MutationObserver(checkNavigation);
+  const navObserver = new MutationObserver(checkNavigation);
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => init(), 1000);
-      observer.observe(document.body, { childList: true, subtree: true });
+      navObserver.observe(document.body, { childList: true, subtree: true });
     });
   } else {
     setTimeout(() => init(), 1000);
-    observer.observe(document.body, { childList: true, subtree: true });
+    navObserver.observe(document.body, { childList: true, subtree: true });
   }
 })();

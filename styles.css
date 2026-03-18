@@ -71,84 +71,24 @@
 }
 
 /* ============================================
-   Searchable backlog list (for native Ctrl+F)
+   Shadow backlog items (invisible but Ctrl+F findable)
+   Items use opacity:0 when NOT in Jira's virtual scroll,
+   and visibility:hidden when they ARE (so no duplicates).
    ============================================ */
 
-#jr-searchable-backlog {
-  border-top: 2px solid var(--ds-border, #3b3f46);
-  margin-top: 16px;
-  padding: 8px 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-.jr-sbl-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  cursor: pointer;
-  user-select: none;
-  color: var(--ds-text-subtlest, #8993a4);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.jr-sbl-header:hover {
-  color: var(--ds-text, #c7d1db);
-}
-
-.jr-sbl-toggle {
-  font-size: 10px;
-}
-
-.jr-sbl-title {
-  font-weight: 600;
-}
-
-.jr-sbl-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.jr-sbl-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 16px 4px 28px;
-  text-decoration: none;
-  color: var(--ds-text, #c7d1db);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.jr-sbl-row:hover {
-  background: var(--ds-background-neutral-hovered, rgba(255, 255, 255, 0.04));
-}
-
-.jr-sbl-key {
-  color: var(--ds-link, #579dff);
-  font-weight: 600;
-  white-space: nowrap;
-  min-width: 80px;
-}
-
-.jr-sbl-summary {
-  flex: 1;
+#jr-shadow-backlog {
+  position: relative;
+  height: 1px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.jr-sbl-status {
-  font-size: 11px;
-  color: var(--ds-text-subtlest, #8993a4);
+.jr-shadow-item {
+  display: block;
+  height: 1px;
+  font-size: 1px;
+  line-height: 1px;
+  color: transparent;
+  text-decoration: none;
+  overflow: hidden;
   white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.jr-sbl-loading {
-  padding: 16px;
-  color: var(--ds-text-subtlest, #8993a4);
-  font-size: 13px;
 }
