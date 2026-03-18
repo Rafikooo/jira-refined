@@ -11,23 +11,21 @@
     );
   }
 
-  function init() {
-    document.addEventListener("keydown", (e) => {
+  // Use capturing phase to intercept before browser's built-in Cmd+F
+  document.addEventListener(
+    "keydown",
+    (e) => {
       if (!isBacklogPage()) return;
       if (e.key === "f" && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
         const input = getSearchInput();
         if (!input) return;
 
         e.preventDefault();
+        e.stopImmediatePropagation();
         input.focus();
         input.select();
       }
-    });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+    },
+    true
+  );
 })();
