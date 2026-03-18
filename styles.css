@@ -56,39 +56,31 @@
 }
 
 /* ============================================
-   Hide Jira's duplicate key links from Ctrl+F.
-   Inside each accessible-card-key container, Jira renders
-   multiple <a> tags with the key text. We hide all except
-   the one the user actually sees (the non-aria-hidden one).
+   Hide Jira's screen-reader duplicate key from Ctrl+F.
+   Only target the screen-reader-key element (1px hidden link).
+   Do NOT target aria-hidden broadly - the visible key also has it.
    ============================================ */
-[data-testid="software-backlog.card-list.card.card-contents.screen-reader-key"],
-[data-testid="software-backlog.card-list.card.card-contents.accessible-card-key"] > a[aria-hidden="true"] {
+[data-testid="software-backlog.card-list.card.card-contents.screen-reader-key"] {
   visibility: hidden !important;
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden !important;
 }
 
 /* ============================================
    Shadow backlog items (invisible but Ctrl+F findable)
    Items use opacity:0 when NOT in Jira's virtual scroll,
    and visibility:hidden when they ARE (so no duplicates).
+   Container must not clip so browser Ctrl+F highlight shows.
    ============================================ */
 
 #jr-shadow-backlog {
-  position: relative;
-  height: 1px;
-  overflow: hidden;
+  pointer-events: none;
 }
 
 .jr-shadow-item {
   display: block;
-  height: 1px;
   font-size: 1px;
   line-height: 1px;
   color: transparent;
   text-decoration: none;
-  overflow: hidden;
   white-space: nowrap;
+  pointer-events: none;
 }
