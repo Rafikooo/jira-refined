@@ -11,10 +11,23 @@
   // Backlog view: issue keys
   const BACKLOG_KEY_SELECTOR = '[data-testid="software-backlog.card-list.card.card-contents.accessible-card-key"]';
 
-  function copyToClipboard(text) {
-    return navigator.clipboard.writeText(text).catch(() => {
+  function getIssueUrl(issueKey) {
+    return `${window.location.origin}/browse/${issueKey}`;
+  }
+
+  function copyAsRichLink(issueKey) {
+    const url = getIssueUrl(issueKey);
+    const html = `<a href="${url}">${issueKey}</a>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const textBlob = new Blob([issueKey], { type: "text/plain" });
+    const item = new ClipboardItem({
+      "text/html": blob,
+      "text/plain": textBlob,
+    });
+    return navigator.clipboard.write([item]).catch(() => {
+      // Fallback: copy plain text
       const ta = document.createElement("textarea");
-      ta.value = text;
+      ta.value = issueKey;
       ta.style.cssText = "position:fixed;opacity:0;left:-9999px";
       document.body.appendChild(ta);
       ta.select();
@@ -41,7 +54,7 @@
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      copyToClipboard(issueKey).then(() => showCopiedFeedback(btn));
+      copyAsRichLink(issueKey).then(() => showCopiedFeedback(btn));
       btn.blur();
     });
 
