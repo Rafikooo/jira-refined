@@ -12,11 +12,16 @@
   function collapseSpaces() {
     const spacesBtn = document.querySelector(SPACES_SELECTOR);
     if (!spacesBtn) return false;
-    if (spacesBtn.getAttribute("aria-expanded") !== "true") return true;
-    if (lastCollapsedUrl === window.location.href) return true;
 
-    spacesBtn.click();
-    lastCollapsedUrl = window.location.href;
+    if (spacesBtn.getAttribute("aria-expanded") === "true") {
+      if (lastCollapsedUrl !== window.location.href) {
+        spacesBtn.click();
+        lastCollapsedUrl = window.location.href;
+      }
+    }
+
+    // CSS hid content instantly; now that collapse happened, let Jira handle it
+    document.body.classList.add("jr-spaces-ready");
     return true;
   }
 
@@ -116,14 +121,14 @@
   const navObserver = new MutationObserver(() => {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
-      // Re-collapse spaces on navigation
+      // Reset CSS guard so content stays hidden until JS collapses
+      document.body.classList.remove("jr-spaces-ready");
       setTimeout(() => {
         collapseSpaces();
-        // Re-render starred if removed by Jira re-render
         if (!document.getElementById(STARRED_SECTION_ID) && starredItems) {
           renderStarredInline(starredItems);
         }
-      }, 500);
+      }, 300);
     }
   });
 

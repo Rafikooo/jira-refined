@@ -56,6 +56,15 @@
 }
 
 /* ============================================
+   Auto-collapse Spaces: hide content instantly via CSS
+   until JS has clicked the collapse button. Once collapsed,
+   body gets .jr-spaces-ready and CSS steps aside.
+   ============================================ */
+body:not(.jr-spaces-ready) [data-testid="NAV4_jira.sidebar.projects-container"] > *:not([data-testid="NAV4_jira.sidebar.projects"]) {
+  display: none !important;
+}
+
+/* ============================================
    Hide Jira's screen-reader duplicate key from Ctrl+F.
    Only target the screen-reader-key element (1px hidden link).
    Do NOT target aria-hidden broadly - the visible key also has it.
