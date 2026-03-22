@@ -56,11 +56,11 @@
 }
 
 /* ============================================
-   Auto-collapse Spaces: hide content instantly via CSS
-   until JS has clicked the collapse button. Once collapsed,
-   body gets .jr-spaces-ready and CSS steps aside.
+   Auto-collapse Spaces: CSS permanently hides content.
+   User can manually expand via click (JS adds class).
+   On navigation the class resets - always starts collapsed.
    ============================================ */
-body:not(.jr-spaces-ready) [data-testid="NAV4_jira.sidebar.projects-container"] > *:not([data-testid="NAV4_jira.sidebar.projects"]) {
+[data-testid="NAV4_jira.sidebar.projects-container"]:not(.jr-user-expanded) > *:not([data-testid="NAV4_jira.sidebar.projects"]) {
   display: none !important;
 }
 

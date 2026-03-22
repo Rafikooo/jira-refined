@@ -1,13 +1,16 @@
 (() => {
   "use strict";
 
-  const SPACES_SELECTOR = '[data-testid="NAV4_jira.sidebar.projects"]';
+  const SPACES_CONTAINER_SELECTOR =
+    '[data-testid="NAV4_jira.sidebar.projects-container"]';
+  const SPACES_BTN_SELECTOR =
+    '[data-testid="NAV4_jira.sidebar.projects"]';
   const STARRED_SECTION_ID = "jr-starred-inline";
   const CACHE_KEY = "jr-starred-items";
-  const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
+  const CACHE_TTL = 1000 * 60 * 30;
 
-  let lastCollapsedUrl = "";
   let starredItems = null;
+  let spacesListenerAttached = false;
 
   // ── LocalStorage cache ────────────────────────────────
 
@@ -29,26 +32,29 @@
         CACHE_KEY,
         JSON.stringify({ items, ts: Date.now() })
       );
-    } catch {
-      // storage full or blocked
-    }
+    } catch {}
   }
 
-  // ── Spaces auto-collapse ──────────────────────────────
+  // ── Spaces: CSS handles collapse, JS handles user expand ──
 
-  function collapseSpaces() {
-    const spacesBtn = document.querySelector(SPACES_SELECTOR);
-    if (!spacesBtn) return false;
+  function setupSpacesToggle() {
+    if (spacesListenerAttached) return;
+    const btn = document.querySelector(SPACES_BTN_SELECTOR);
+    if (!btn) return;
 
-    if (spacesBtn.getAttribute("aria-expanded") === "true") {
-      if (lastCollapsedUrl !== window.location.href) {
-        spacesBtn.click();
-        lastCollapsedUrl = window.location.href;
-      }
-    }
+    spacesListenerAttached = true;
 
-    document.body.classList.add("jr-spaces-ready");
-    return true;
+    btn.addEventListener("click", () => {
+      const container = document.querySelector(SPACES_CONTAINER_SELECTOR);
+      if (!container) return;
+      container.classList.toggle("jr-user-expanded");
+    });
+  }
+
+  function resetSpacesState() {
+    const container = document.querySelector(SPACES_CONTAINER_SELECTOR);
+    if (container) container.classList.remove("jr-user-expanded");
+    spacesListenerAttached = false;
   }
 
   // ── Starred items: invisible scrape from popup ────────
@@ -64,9 +70,7 @@
       const btn = getStarredButton();
       if (!btn) return resolve([]);
 
-      // Hide popup visually during scrape
       document.body.classList.add("jr-scraping");
-
       btn.click();
 
       setTimeout(() => {
@@ -87,15 +91,10 @@
           }
         }
 
-        // Close popup and remove scraping guard
         btn.click();
-        setTimeout(() => {
-          document.body.classList.remove("jr-scraping");
-        }, 100);
+        setTimeout(() => document.body.classList.remove("jr-scraping"), 100);
 
-        // Cache for next load
         setCachedStarred(items);
-
         resolve(items);
       }, 600);
     });
@@ -130,17 +129,18 @@
   // ── Init ──────────────────────────────────────────────
 
   async function init() {
-    if (!collapseSpaces()) {
+    const spacesBtn = document.querySelector(SPACES_BTN_SELECTOR);
+    if (!spacesBtn) {
       setTimeout(init, 500);
       return;
     }
 
-    // Use cached starred items if available (no popup flash)
+    setupSpacesToggle();
+
     if (!starredItems) {
       starredItems = getCachedStarred();
     }
 
-    // If no cache, scrape invisibly
     if (!starredItems) {
       await new Promise((r) => setTimeout(r, 300));
       starredItems = await scrapeStarredItems();
@@ -156,9 +156,9 @@
   const navObserver = new MutationObserver(() => {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
-      document.body.classList.remove("jr-spaces-ready");
+      resetSpacesState();
       setTimeout(() => {
-        collapseSpaces();
+        setupSpacesToggle();
         if (!document.getElementById(STARRED_SECTION_ID) && starredItems) {
           renderStarredInline(starredItems);
         }
