@@ -7,7 +7,7 @@
   "content_scripts": [
     {
       "matches": ["https://*.atlassian.net/*"],
-      "js": ["content.js", "backlog-search.js"],
+      "js": ["content.js", "backlog-search.js", "sidebar.js"],
       "css": ["styles.css"]
     }
   ]
