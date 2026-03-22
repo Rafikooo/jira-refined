@@ -64,6 +64,15 @@ body:not(.jr-spaces-ready) [data-testid="NAV4_jira.sidebar.projects-container"] 
   display: none !important;
 }
 
+/* Hide Starred popup while scraping items invisibly */
+body.jr-scraping [role="dialog"],
+body.jr-scraping [data-ds--floating-menu-content--wrapper="true"],
+body.jr-scraping [class*="layered"] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: none !important;
+}
+
 /* ============================================
    Hide Jira's screen-reader duplicate key from Ctrl+F.
    Only target the screen-reader-key element (1px hidden link).

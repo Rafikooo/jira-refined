@@ -3,9 +3,36 @@
 
   const SPACES_SELECTOR = '[data-testid="NAV4_jira.sidebar.projects"]';
   const STARRED_SECTION_ID = "jr-starred-inline";
+  const CACHE_KEY = "jr-starred-items";
+  const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
 
   let lastCollapsedUrl = "";
   let starredItems = null;
+
+  // ── LocalStorage cache ────────────────────────────────
+
+  function getCachedStarred() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const { items, ts } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL) return null;
+      return items;
+    } catch {
+      return null;
+    }
+  }
+
+  function setCachedStarred(items) {
+    try {
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({ items, ts: Date.now() })
+      );
+    } catch {
+      // storage full or blocked
+    }
+  }
 
   // ── Spaces auto-collapse ──────────────────────────────
 
@@ -20,12 +47,11 @@
       }
     }
 
-    // CSS hid content instantly; now that collapse happened, let Jira handle it
     document.body.classList.add("jr-spaces-ready");
     return true;
   }
 
-  // ── Starred items: scrape from popup ──────────────────
+  // ── Starred items: invisible scrape from popup ────────
 
   function getStarredButton() {
     return [...document.querySelectorAll("button")].find(
@@ -38,7 +64,9 @@
       const btn = getStarredButton();
       if (!btn) return resolve([]);
 
-      // Open popup
+      // Hide popup visually during scrape
+      document.body.classList.add("jr-scraping");
+
       btn.click();
 
       setTimeout(() => {
@@ -46,7 +74,6 @@
         const links = document.querySelectorAll("a[href]");
         for (const link of links) {
           const rect = link.getBoundingClientRect();
-          // Popup links: center area, between search box and "View all" link
           if (
             rect.top > 180 &&
             rect.top < 550 &&
@@ -60,8 +87,14 @@
           }
         }
 
-        // Close popup
+        // Close popup and remove scraping guard
         btn.click();
+        setTimeout(() => {
+          document.body.classList.remove("jr-scraping");
+        }, 100);
+
+        // Cache for next load
+        setCachedStarred(items);
 
         resolve(items);
       }, 600);
@@ -77,7 +110,6 @@
     const starredBtn = getStarredButton();
     if (!starredBtn) return;
 
-    // Find the parent container to insert after
     const section = starredBtn.parentElement;
     if (!section) return;
 
@@ -98,15 +130,18 @@
   // ── Init ──────────────────────────────────────────────
 
   async function init() {
-    // Collapse spaces
     if (!collapseSpaces()) {
       setTimeout(init, 500);
       return;
     }
 
-    // Scrape and render starred (once)
+    // Use cached starred items if available (no popup flash)
     if (!starredItems) {
-      // Small delay to let sidebar fully render
+      starredItems = getCachedStarred();
+    }
+
+    // If no cache, scrape invisibly
+    if (!starredItems) {
       await new Promise((r) => setTimeout(r, 300));
       starredItems = await scrapeStarredItems();
     }
@@ -121,7 +156,6 @@
   const navObserver = new MutationObserver(() => {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
-      // Reset CSS guard so content stays hidden until JS collapses
       document.body.classList.remove("jr-spaces-ready");
       setTimeout(() => {
         collapseSpaces();

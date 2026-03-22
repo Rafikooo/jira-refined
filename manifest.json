@@ -8,7 +8,8 @@
     {
       "matches": ["https://*.atlassian.net/*"],
       "js": ["content.js", "backlog-search.js", "sidebar.js"],
-      "css": ["styles.css"]
+      "css": ["styles.css"],
+      "run_at": "document_start"
     }
   ]
 }
