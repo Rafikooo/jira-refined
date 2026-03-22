@@ -9,32 +9,55 @@
   // Board view: card keys
   const BOARD_KEY_SELECTOR = '[data-testid="platform-card.common.ui.key.key"]';
   // Backlog view: issue keys
-  const BACKLOG_KEY_SELECTOR = '[data-testid="software-backlog.card-list.card.card-contents.accessible-card-key"]';
+  const BACKLOG_KEY_SELECTOR =
+    '[data-testid="software-backlog.card-list.card.card-contents.accessible-card-key"]';
+  // Issue detail view
+  const ISSUE_KEY_SELECTOR =
+    '[data-testid="issue.views.issue-base.foundation.breadcrumbs.current-issue.item"]';
+  const ISSUE_TITLE_SELECTOR =
+    '[data-testid="issue.views.issue-base.foundation.summary.heading"]';
+  const PERMALINK_SELECTOR = '[data-testid*="permalink-button"]';
+
+  // ── Clipboard helpers ─────────────────────────────────
 
   function getIssueUrl(issueKey) {
     return `${window.location.origin}/browse/${issueKey}`;
   }
 
-  function copyAsRichLink(issueKey) {
-    const url = getIssueUrl(issueKey);
+  function copyRichLink(issueKey, url) {
     const html = `<a href="${url}">${issueKey}</a>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const textBlob = new Blob([issueKey], { type: "text/plain" });
     const item = new ClipboardItem({
-      "text/html": blob,
-      "text/plain": textBlob,
+      "text/html": new Blob([html], { type: "text/html" }),
+      "text/plain": new Blob([issueKey], { type: "text/plain" }),
     });
-    return navigator.clipboard.write([item]).catch(() => {
-      // Fallback: copy plain text
-      const ta = document.createElement("textarea");
-      ta.value = issueKey;
-      ta.style.cssText = "position:fixed;opacity:0;left:-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-    });
+    return navigator.clipboard.write([item]).catch(() => fallbackCopy(issueKey));
   }
+
+  function copyPlainText(text) {
+    return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  }
+
+  function copyRichLinkWithTitle(issueKey, url, title) {
+    const html = `<a href="${url}">${issueKey}</a><br>${title}`;
+    const plain = `${issueKey}\n${title}`;
+    const item = new ClipboardItem({
+      "text/html": new Blob([html], { type: "text/html" }),
+      "text/plain": new Blob([plain], { type: "text/plain" }),
+    });
+    return navigator.clipboard.write([item]).catch(() => fallbackCopy(plain));
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;opacity:0;left:-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+
+  // ── UI helpers ────────────────────────────────────────
 
   function showCopiedFeedback(btn) {
     btn.innerHTML = CHECK_ICON;
@@ -45,25 +68,22 @@
     }, 1500);
   }
 
-  function createCopyButton(issueKey) {
+  function createCopyBtn(onClick) {
     const btn = document.createElement("button");
     btn.className = BUTTON_CLASS;
     btn.innerHTML = COPY_ICON;
-    btn.setAttribute("aria-label", `Copy ${issueKey}`);
-
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      copyAsRichLink(issueKey).then(() => showCopiedFeedback(btn));
+      onClick().then(() => showCopiedFeedback(btn));
       btn.blur();
     });
-
     return btn;
   }
 
+  // ── Board & Backlog copy buttons ──────────────────────
+
   function getIssueKey(container) {
-    // Board view: div > a > div with text
-    // Backlog view: div > a with text
     const anchor = container.querySelector("a");
     if (anchor) {
       const textDiv = anchor.querySelector("div");
@@ -77,11 +97,12 @@
     const keyElements = document.querySelectorAll(BOARD_KEY_SELECTOR);
     for (const keyEl of keyElements) {
       if (keyEl.querySelector(`.${BUTTON_CLASS}`)) continue;
-
       const issueKey = getIssueKey(keyEl);
       if (!issueKey) continue;
 
-      const btn = createCopyButton(issueKey);
+      const btn = createCopyBtn(() =>
+        copyRichLink(issueKey, getIssueUrl(issueKey))
+      );
       keyEl.style.display = "flex";
       keyEl.style.alignItems = "center";
       keyEl.style.direction = "ltr";
@@ -93,24 +114,69 @@
     const containers = document.querySelectorAll(BACKLOG_KEY_SELECTOR);
     for (const container of containers) {
       if (container.querySelector(`.${BUTTON_CLASS}`)) continue;
-
-      // Get the visible key link (not the screen-reader one)
-      const visibleKey = container.querySelector('[data-testid="software-backlog.card-list.card.card-contents.key"]');
+      const visibleKey = container.querySelector(
+        '[data-testid="software-backlog.card-list.card.card-contents.key"]'
+      );
       if (!visibleKey) continue;
-
       const issueKey = visibleKey.textContent.trim();
       if (!issueKey) continue;
 
-      const btn = createCopyButton(issueKey);
+      const btn = createCopyBtn(() =>
+        copyRichLink(issueKey, getIssueUrl(issueKey))
+      );
       container.style.display = "flex";
       container.style.alignItems = "center";
       container.appendChild(btn);
     }
   }
 
+  // ── Issue detail view copy buttons ────────────────────
+
+  function injectIssueDetailButtons() {
+    const issueKeyEl = document.querySelector(ISSUE_KEY_SELECTOR);
+    const h1 = document.querySelector(ISSUE_TITLE_SELECTOR);
+    if (!issueKeyEl || !h1) return;
+
+    const issueKey = issueKeyEl.textContent.trim();
+    const url = getIssueUrl(issueKey);
+    const title = h1.textContent.trim();
+
+    // 1. Copy rich link button next to issue key in breadcrumb
+    const keyParent = issueKeyEl.closest("li") || issueKeyEl.parentElement;
+    if (keyParent && !keyParent.querySelector(".jp-copy-link")) {
+      const linkBtn = createCopyBtn(() => copyRichLink(issueKey, url));
+      linkBtn.classList.add("jp-copy-link", "jp-copy-detail");
+      linkBtn.title = issueKey;
+      keyParent.style.display = "flex";
+      keyParent.style.alignItems = "center";
+      keyParent.appendChild(linkBtn);
+    }
+
+    // 2. Copy title button - next to h1
+    if (!h1.parentElement.querySelector(".jp-copy-title")) {
+      const titleBtn = createCopyBtn(() => copyPlainText(title));
+      titleBtn.classList.add("jp-copy-title", "jp-copy-detail");
+      h1.parentElement.style.position = "relative";
+      h1.parentElement.appendChild(titleBtn);
+    }
+
+    // 3. Copy link + title button - below h1
+    if (!h1.parentElement.parentElement.querySelector(".jp-copy-combo")) {
+      const comboBtn = createCopyBtn(() =>
+        copyRichLinkWithTitle(issueKey, url, title)
+      );
+      comboBtn.classList.add("jp-copy-combo", "jp-copy-detail");
+      comboBtn.title = `${issueKey}\n${title}`;
+      h1.parentElement.insertAdjacentElement("afterend", comboBtn);
+    }
+  }
+
+  // ── Main ──────────────────────────────────────────────
+
   function injectCopyButtons() {
     injectBoardButtons();
     injectBacklogButtons();
+    injectIssueDetailButtons();
   }
 
   let debounceTimer = null;
