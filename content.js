@@ -163,20 +163,23 @@
       h1.appendChild(titleBtn);
     }
 
-    // 3. Copy link + title - separate row below h1 container
-    const headingContainer = h1.closest(
-      '[data-testid="issue-field-single-line-text-inline-edit-heading.ui.single-line-text-heading.read-view"]'
-    ) || h1.parentElement;
-    if (
-      headingContainer &&
-      !headingContainer.parentElement.querySelector(".jp-copy-combo")
-    ) {
+    // 3. Copy link + title - separate row below heading
+    // Walk up from h1 until we find a block-level container
+    let blockParent = h1.parentElement;
+    while (blockParent && getComputedStyle(blockParent).display !== "block") {
+      blockParent = blockParent.parentElement;
+    }
+    if (blockParent && !blockParent.querySelector(".jp-copy-combo")) {
       const comboBtn = createCopyBtn(() =>
         copyRichLinkWithTitle(issueKey, url, title)
       );
       comboBtn.classList.add("jp-copy-combo", "jp-copy-detail");
       comboBtn.title = "Copy link + title";
-      headingContainer.insertAdjacentElement("afterend", comboBtn);
+      // Insert as first child of the block parent, after the heading row
+      const headingRow = h1.closest(
+        '[data-testid="issue-field-single-line-text-inline-edit-heading.ui.single-line-text-heading.read-view"]'
+      )?.parentElement || h1.parentElement;
+      headingRow.insertAdjacentElement("afterend", comboBtn);
     }
   }
 
