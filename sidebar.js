@@ -11,6 +11,7 @@
 
   let starredItems = null;
   let spacesListenerAttached = false;
+  let scrapingInProgress = false;
 
   // ── LocalStorage cache ────────────────────────────────
 
@@ -35,78 +36,29 @@
     } catch {}
   }
 
-  // ── Spaces: CSS handles collapse, JS handles user expand ──
+  // ── Spaces toggle listener ────────────────────────────
 
-  function setupSpacesToggle() {
+  function attachSpacesToggle(btn) {
     if (spacesListenerAttached) return;
-    const btn = document.querySelector(SPACES_BTN_SELECTOR);
-    if (!btn) return;
-
     spacesListenerAttached = true;
 
     btn.addEventListener("click", () => {
       const container = document.querySelector(SPACES_CONTAINER_SELECTOR);
-      if (!container) return;
-      container.classList.toggle("jr-user-expanded");
+      if (container) container.classList.toggle("jr-user-expanded");
     });
   }
 
-  function resetSpacesState() {
-    const container = document.querySelector(SPACES_CONTAINER_SELECTOR);
-    if (container) container.classList.remove("jr-user-expanded");
-    spacesListenerAttached = false;
-  }
+  // ── Starred items rendering ───────────────────────────
 
-  // ── Starred items: invisible scrape from popup ────────
-
-  function getStarredButton() {
-    return [...document.querySelectorAll("button")].find(
-      (b) => b.textContent.trim() === "Starred"
-    );
-  }
-
-  function scrapeStarredItems() {
-    return new Promise((resolve) => {
-      const btn = getStarredButton();
-      if (!btn) return resolve([]);
-
-      document.body.classList.add("jr-scraping");
-      btn.click();
-
-      setTimeout(() => {
-        const items = [];
-        const links = document.querySelectorAll("a[href]");
-        for (const link of links) {
-          const rect = link.getBoundingClientRect();
-          if (
-            rect.top > 180 &&
-            rect.top < 550 &&
-            rect.left > 150 &&
-            rect.left < 600 &&
-            rect.width > 100
-          ) {
-            const text = link.textContent.trim();
-            if (text === "View all starred items") continue;
-            items.push({ name: text, href: link.href });
-          }
-        }
-
-        btn.click();
-        setTimeout(() => document.body.classList.remove("jr-scraping"), 100);
-
-        setCachedStarred(items);
-        resolve(items);
-      }, 600);
-    });
-  }
-
-  // ── Render starred inline ─────────────────────────────
-
-  function renderStarredInline(items) {
+  function renderStarredInline(items, anchorEl) {
     if (document.getElementById(STARRED_SECTION_ID)) return;
-    if (!items.length) return;
+    if (!items || !items.length) return;
 
-    const starredBtn = getStarredButton();
+    const starredBtn =
+      anchorEl ||
+      [...document.querySelectorAll("button")].find(
+        (b) => b.textContent.trim() === "Starred"
+      );
     if (!starredBtn) return;
 
     const section = starredBtn.parentElement;
@@ -126,53 +78,144 @@
     section.insertAdjacentElement("afterend", container);
   }
 
-  // ── Init ──────────────────────────────────────────────
+  // ── Starred items scraping (invisible) ────────────────
 
-  async function init() {
-    const spacesBtn = document.querySelector(SPACES_BTN_SELECTOR);
-    if (!spacesBtn) {
-      setTimeout(init, 500);
+  function scrapeStarredItems() {
+    if (scrapingInProgress) return;
+    scrapingInProgress = true;
+
+    const btn = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent.trim() === "Starred"
+    );
+    if (!btn) {
+      scrapingInProgress = false;
       return;
     }
 
-    setupSpacesToggle();
+    document.body.classList.add("jr-scraping");
+    btn.click();
+
+    setTimeout(() => {
+      const items = [];
+      const links = document.querySelectorAll("a[href]");
+      for (const link of links) {
+        const rect = link.getBoundingClientRect();
+        if (
+          rect.top > 180 &&
+          rect.top < 550 &&
+          rect.left > 150 &&
+          rect.left < 600 &&
+          rect.width > 100
+        ) {
+          const text = link.textContent.trim();
+          if (text === "View all starred items") continue;
+          items.push({ name: text, href: link.href });
+        }
+      }
+
+      btn.click();
+      setTimeout(() => document.body.classList.remove("jr-scraping"), 100);
+
+      starredItems = items;
+      setCachedStarred(items);
+      renderStarredInline(items);
+      scrapingInProgress = false;
+    }, 600);
+  }
+
+  // ── Core injection (called from MutationObserver) ─────
+
+  function tryInject(root) {
+    // Look for the Spaces button in the added subtree
+    const spacesBtn = root.matches?.(SPACES_BTN_SELECTOR)
+      ? root
+      : root.querySelector?.(SPACES_BTN_SELECTOR);
+
+    if (spacesBtn) {
+      attachSpacesToggle(spacesBtn);
+    }
+
+    // Look for Starred button to inject items
+    if (document.getElementById(STARRED_SECTION_ID)) return;
+
+    const starredBtn = root.querySelector
+      ? [...(root.querySelectorAll?.("button") || [])].find(
+          (b) => b.textContent.trim() === "Starred"
+        )
+      : null;
+
+    if (!starredBtn && root.textContent?.trim() === "Starred" && root.tagName === "BUTTON") {
+      // The added node itself is the Starred button
+      injectFromCache(root);
+      return;
+    }
+
+    if (starredBtn) {
+      injectFromCache(starredBtn);
+    }
+  }
+
+  function injectFromCache(starredBtn) {
+    if (document.getElementById(STARRED_SECTION_ID)) return;
 
     if (!starredItems) {
       starredItems = getCachedStarred();
     }
 
-    if (!starredItems) {
-      await new Promise((r) => setTimeout(r, 300));
-      starredItems = await scrapeStarredItems();
+    if (starredItems) {
+      renderStarredInline(starredItems, starredBtn);
+    } else {
+      // No cache - scrape lazily after page settles
+      setTimeout(scrapeStarredItems, 1500);
     }
-
-    if (document.getElementById(STARRED_SECTION_ID)) return;
-    renderStarredInline(starredItems);
   }
 
-  // ── SPA navigation ────────────────────────────────────
+  // ── MutationObserver from document_start ──────────────
+  // Fires as microtask BEFORE paint - injections are flicker-free
 
-  let lastUrl = "";
-  const navObserver = new MutationObserver(() => {
-    if (window.location.href !== lastUrl) {
-      lastUrl = window.location.href;
-      resetSpacesState();
-      setTimeout(() => {
-        setupSpacesToggle();
-        if (!document.getElementById(STARRED_SECTION_ID) && starredItems) {
-          renderStarredInline(starredItems);
-        }
-      }, 300);
+  const domObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        tryInject(node);
+      }
     }
   });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      setTimeout(init, 800);
-      navObserver.observe(document.body, { childList: true, subtree: true });
-    });
-  } else {
-    setTimeout(init, 800);
-    navObserver.observe(document.body, { childList: true, subtree: true });
+  // Start observing immediately - even before <body> exists
+  domObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
+
+  // ── SPA navigation: override history.pushState ────────
+
+  const navScript = document.createElement("script");
+  navScript.textContent = `(function(){
+    var orig = history.pushState;
+    var origReplace = history.replaceState;
+    history.pushState = function(){
+      orig.apply(this, arguments);
+      window.dispatchEvent(new Event('jr-navigation'));
+    };
+    history.replaceState = function(){
+      origReplace.apply(this, arguments);
+      window.dispatchEvent(new Event('jr-navigation'));
+    };
+  })();`;
+  (document.head || document.documentElement).appendChild(navScript);
+  navScript.remove();
+
+  window.addEventListener("jr-navigation", onNavigation);
+  window.addEventListener("popstate", onNavigation);
+
+  function onNavigation() {
+    // Reset spaces state
+    const container = document.querySelector(SPACES_CONTAINER_SELECTOR);
+    if (container) container.classList.remove("jr-user-expanded");
+    spacesListenerAttached = false;
+
+    // Starred items will be re-injected by MutationObserver
+    // when React re-renders the sidebar
   }
 })();
