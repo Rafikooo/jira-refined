@@ -188,34 +188,16 @@
     subtree: true,
   });
 
-  // ── SPA navigation: override history.pushState ────────
+  // ── SPA navigation: lightweight URL polling ────────────
 
-  const navScript = document.createElement("script");
-  navScript.textContent = `(function(){
-    var orig = history.pushState;
-    var origReplace = history.replaceState;
-    history.pushState = function(){
-      orig.apply(this, arguments);
-      window.dispatchEvent(new Event('jr-navigation'));
-    };
-    history.replaceState = function(){
-      origReplace.apply(this, arguments);
-      window.dispatchEvent(new Event('jr-navigation'));
-    };
-  })();`;
-  (document.head || document.documentElement).appendChild(navScript);
-  navScript.remove();
-
-  window.addEventListener("jr-navigation", onNavigation);
-  window.addEventListener("popstate", onNavigation);
-
-  function onNavigation() {
-    // Reset spaces state
-    const container = document.querySelector(SPACES_CONTAINER_SELECTOR);
-    if (container) container.classList.remove("jr-user-expanded");
-    spacesListenerAttached = false;
-
-    // Starred items will be re-injected by MutationObserver
-    // when React re-renders the sidebar
-  }
+  let lastUrl = location.href;
+  setInterval(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      const container = document.querySelector(SPACES_CONTAINER_SELECTOR);
+      if (container) container.classList.remove("jr-user-expanded");
+      spacesListenerAttached = false;
+      // MutationObserver will handle re-injection when React re-renders
+    }
+  }, 200);
 })();
