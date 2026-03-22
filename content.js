@@ -152,22 +152,31 @@
       keyParent.appendChild(linkBtn);
     }
 
-    // 2. Copy title button - next to h1
-    if (!h1.parentElement.querySelector(".jp-copy-title")) {
+    // 2. Copy title button - inline after h1 text
+    if (!h1.querySelector(".jp-copy-title")) {
       const titleBtn = createCopyBtn(() => copyPlainText(title));
       titleBtn.classList.add("jp-copy-title", "jp-copy-detail");
-      h1.parentElement.style.position = "relative";
-      h1.parentElement.appendChild(titleBtn);
+      titleBtn.title = "Copy title";
+      h1.style.display = "flex";
+      h1.style.alignItems = "center";
+      h1.style.gap = "8px";
+      h1.appendChild(titleBtn);
     }
 
-    // 3. Copy link + title button - below h1
-    if (!h1.parentElement.parentElement.querySelector(".jp-copy-combo")) {
+    // 3. Copy link + title - separate row below h1 container
+    const headingContainer = h1.closest(
+      '[data-testid="issue-field-single-line-text-inline-edit-heading.ui.single-line-text-heading.read-view"]'
+    ) || h1.parentElement;
+    if (
+      headingContainer &&
+      !headingContainer.parentElement.querySelector(".jp-copy-combo")
+    ) {
       const comboBtn = createCopyBtn(() =>
         copyRichLinkWithTitle(issueKey, url, title)
       );
       comboBtn.classList.add("jp-copy-combo", "jp-copy-detail");
-      comboBtn.title = `${issueKey}\n${title}`;
-      h1.parentElement.insertAdjacentElement("afterend", comboBtn);
+      comboBtn.title = "Copy link + title";
+      headingContainer.insertAdjacentElement("afterend", comboBtn);
     }
   }
 

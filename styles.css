@@ -62,18 +62,15 @@
 }
 
 .jp-copy-detail.jp-copy-title {
-  position: absolute;
-  right: -28px;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
 }
 
 .jp-copy-detail.jp-copy-combo {
-  margin-top: 2px;
-  margin-left: 0;
+  display: flex;
+  margin-top: 4px;
 }
 
-[data-testid="issue-field-single-line-text-inline-edit-heading.ui.single-line-text-heading.read-view"]:hover .jp-copy-detail,
+[data-testid="issue.views.issue-base.foundation.summary.heading"]:hover .jp-copy-detail,
 .jp-copy-combo:hover,
 nav[aria-label="Work item breadcrumbs"]:hover .jp-copy-detail {
   opacity: 0.6;
