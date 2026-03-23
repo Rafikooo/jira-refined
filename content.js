@@ -310,14 +310,8 @@
     debounceTimer = setTimeout(injectCopyButtons, 300);
   });
 
-  function init() {
-    injectCopyButtons();
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
 })();

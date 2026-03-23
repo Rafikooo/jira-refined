@@ -150,14 +150,13 @@
     subtree: true,
   });
 
-  // URL change detection
+  // URL change detection - MutationObserver handles re-injection
   let lastUrl = location.href;
   setInterval(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       const existing = document.getElementById(DETAILS_ID);
       if (existing) existing.remove();
-      if (isIssuePage()) setTimeout(init, 500);
     }
   }, 200);
 })();
