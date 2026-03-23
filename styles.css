@@ -170,8 +170,8 @@ body.jr-scraping [class*="layered"] {
 
 /* Highlight for currently navigated search result */
 .jr-search-highlight,
-.jr-search-highlight > * {
-  background-color: rgba(87, 157, 255, 0.25) !important;
+.jr-search-highlight *:not(mark):not(span):not(button):not(svg):not(img):not(a) {
+  background-color: rgba(87, 157, 255, 0.20) !important;
 }
 
 /* ============================================
