@@ -225,8 +225,8 @@
       tableBtn.title = "Copy as table row";
 
       wrapper.appendChild(linkBtn);
-      wrapper.appendChild(sep);
       wrapper.appendChild(titleBtn);
+      wrapper.appendChild(sep);
       wrapper.appendChild(tableBtn);
       keyCell.prepend(wrapper);
     }
