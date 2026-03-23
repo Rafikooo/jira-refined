@@ -111,6 +111,9 @@
     inner.classList.add("jr-search-highlight");
     card.scrollIntoView({ behavior: "smooth", block: "center" });
 
+    // Keep focus on input after scroll
+    setTimeout(() => getSearchInput()?.focus(), 50);
+
     updateCounter();
   }
 
@@ -141,6 +144,7 @@
 
     input.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
+        e.preventDefault();
         input.value = "";
         input.dispatchEvent(new Event("input", { bubbles: true }));
         document
@@ -148,6 +152,7 @@
           .forEach((el) => el.classList.remove("jr-search-highlight"));
         currentIndex = -1;
         updateCounter();
+        input.focus();
         return;
       }
 
