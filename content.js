@@ -24,8 +24,10 @@
     return `${window.location.origin}/browse/${issueKey}`;
   }
 
+  const FONT = 'style="font-size:16px;font-family:Arial,sans-serif"';
+
   function copyRichLink(issueKey, url) {
-    const html = `<a href="${url}">${issueKey}</a>`;
+    const html = `<span ${FONT}><a href="${url}" ${FONT}>${issueKey}</a></span>`;
     const item = new ClipboardItem({
       "text/html": new Blob([html], { type: "text/html" }),
       "text/plain": new Blob([issueKey], { type: "text/plain" }),
@@ -38,7 +40,7 @@
   }
 
   function copyRichLinkWithTitle(issueKey, url, title) {
-    const html = `<a href="${url}">${issueKey}</a><br>${title}`;
+    const html = `<span ${FONT}><a href="${url}" ${FONT}>${issueKey}</a><br>${title}</span>`;
     const plain = `${issueKey}\n${title}`;
     const item = new ClipboardItem({
       "text/html": new Blob([html], { type: "text/html" }),
@@ -48,7 +50,7 @@
   }
 
   function copyAsTableRow(issueKey, url, title) {
-    const html = `<table><tr><td><a href="${url}">${issueKey}</a></td><td>${title}</td></tr></table>`;
+    const html = `<table ${FONT}><tr><td ${FONT}><a href="${url}" ${FONT}>${issueKey}</a></td><td ${FONT}>${title}</td></tr></table>`;
     const plain = `${issueKey}\t${title}`;
     const item = new ClipboardItem({
       "text/html": new Blob([html], { type: "text/html" }),
