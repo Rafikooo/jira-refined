@@ -92,28 +92,26 @@
       return;
     }
 
+    // Open the Starred section (it expands as a sibling, not a popup)
     document.body.classList.add("jr-scraping");
-    btn.click();
+    const wasExpanded = btn.getAttribute("aria-expanded") === "true";
+    if (!wasExpanded) btn.click();
 
     setTimeout(() => {
       const items = [];
-      const links = document.querySelectorAll("a[href]");
-      for (const link of links) {
-        const rect = link.getBoundingClientRect();
-        if (
-          rect.top > 180 &&
-          rect.top < 550 &&
-          rect.left > 150 &&
-          rect.left < 600 &&
-          rect.width > 100
-        ) {
+      // Items are in the next sibling element after the button's parent
+      const sibling = btn.parentElement?.nextElementSibling;
+      if (sibling) {
+        const links = sibling.querySelectorAll("a[href]");
+        for (const link of links) {
           const text = link.textContent.trim();
-          if (text === "View all starred items") continue;
+          if (!text || text === "View all starred items") continue;
           items.push({ name: text, href: link.href });
         }
       }
 
-      btn.click();
+      // Close if we opened it
+      if (!wasExpanded) btn.click();
       setTimeout(() => document.body.classList.remove("jr-scraping"), 100);
 
       starredItems = items;
