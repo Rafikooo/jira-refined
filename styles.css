@@ -55,6 +55,26 @@
   color: var(--ds-text-success, #4bce97);
 }
 
+/* Sprint report table copy buttons */
+.jp-report-btns {
+  display: inline-flex;
+  gap: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.jp-report-btns .jp-copy-btn {
+  opacity: 0;
+}
+
+tr:hover .jp-report-btns .jp-copy-btn {
+  opacity: 0.5;
+}
+
+.jp-report-btns .jp-copy-btn:hover {
+  opacity: 1 !important;
+}
+
 /* Issue detail view copy buttons */
 .jp-copy-detail {
   opacity: 0;

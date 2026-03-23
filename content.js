@@ -183,12 +183,43 @@
     }
   }
 
+  // ── Sprint report table copy buttons ─────────────────
+
+  function injectReportButtons() {
+    const rows = document.querySelectorAll("table tr");
+    for (const row of rows) {
+      if (row.querySelector(".jp-report-btns")) continue;
+      const keyCell = row.querySelector("td:first-child");
+      const link = keyCell?.querySelector('a[href*="/browse/"]');
+      if (!link) continue;
+
+      const summaryCell = row.querySelector("td:nth-child(2)");
+      const issueKey = link.textContent.trim();
+      const summary = summaryCell?.textContent?.trim() || "";
+      const url = link.href;
+
+      const wrapper = document.createElement("span");
+      wrapper.className = "jp-report-btns";
+
+      const linkBtn = createCopyBtn(() => copyRichLink(issueKey, url));
+      linkBtn.title = issueKey;
+
+      const titleBtn = createCopyBtn(() => copyPlainText(summary));
+      titleBtn.title = "Copy title";
+
+      wrapper.appendChild(linkBtn);
+      wrapper.appendChild(titleBtn);
+      keyCell.prepend(wrapper);
+    }
+  }
+
   // ── Main ──────────────────────────────────────────────
 
   function injectCopyButtons() {
     injectBoardButtons();
     injectBacklogButtons();
     injectIssueDetailButtons();
+    injectReportButtons();
   }
 
   let debounceTimer = null;
