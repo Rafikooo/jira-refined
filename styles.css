@@ -169,3 +169,94 @@ body.jr-scraping [class*="layered"] {
   color: var(--ds-text, #c7d1db);
 }
 
+/* ============================================
+   Issue Details block (classic Jira style)
+   ============================================ */
+
+#jr-details-block {
+  margin: 12px 0 16px 0;
+  border: 1px solid var(--ds-border, #3b3f46);
+  border-radius: 4px;
+  background: var(--ds-surface-raised, #22272b);
+  font-size: 13px;
+}
+
+.jr-d-header {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ds-text, #c7d1db);
+  border-bottom: 1px solid var(--ds-border, #3b3f46);
+  background: var(--ds-surface-sunken, #1d2125);
+  border-radius: 4px 4px 0 0;
+}
+
+.jr-d-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+  padding: 8px 12px;
+}
+
+.jr-d-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.jr-d-row {
+  display: flex;
+  align-items: center;
+  padding: 3px 0;
+  gap: 8px;
+}
+
+.jr-d-label {
+  color: var(--ds-text-subtlest, #8993a4);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.jr-d-value {
+  color: var(--ds-text, #c7d1db);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.jr-d-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+.jr-d-avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.jr-d-status {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.jr-status-done {
+  background: var(--ds-background-success, #1f3d2b);
+  color: var(--ds-text-success, #4bce97);
+}
+
+.jr-status-progress {
+  background: var(--ds-background-information, #1c3349);
+  color: var(--ds-text-information, #579dff);
+}
+
+.jr-status-todo {
+  background: var(--ds-background-neutral, #2c333a);
+  color: var(--ds-text-subtlest, #8993a4);
+}
+
