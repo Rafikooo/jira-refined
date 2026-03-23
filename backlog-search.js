@@ -13,16 +13,22 @@
   }
 
   function getSearchInput() {
-    // Try multiple selectors - testid may vary between instances
+    // Try multiple selectors - testid and placeholder vary between instances
     return (
       document.querySelector(
         '[data-testid="software-filters.ui.stateless.search-field"] input'
+      ) ||
+      document.querySelector(
+        '[data-testid*="search-field"] input'
       ) ||
       document.querySelector(
         'input[placeholder="Search backlog"]'
       ) ||
       document.querySelector(
         'input[placeholder*="backlog" i]'
+      ) ||
+      document.querySelector(
+        'input[placeholder*="search" i]'
       )
     );
   }
@@ -43,13 +49,17 @@
     if (counterEl && counterEl.isConnected) return counterEl;
     counterEl = null;
 
-    const wrapper = getSearchWrapper(input);
-    if (!wrapper) return null;
-
     counterEl = document.createElement("span");
     counterEl.className = "jr-search-counter";
+
     // Insert after the search wrapper, before the avatar row
-    wrapper.insertAdjacentElement("afterend", counterEl);
+    const wrapper = getSearchWrapper(input);
+    if (wrapper?.nextElementSibling) {
+      wrapper.insertAdjacentElement("afterend", counterEl);
+    } else {
+      // Fallback: insert directly after input's container
+      input.parentElement.insertAdjacentElement("afterend", counterEl);
+    }
     return counterEl;
   }
 
