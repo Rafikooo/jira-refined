@@ -170,7 +170,9 @@ body.jr-scraping [class*="layered"] {
 
 /* Highlight for currently navigated search result */
 .jr-search-highlight {
-  box-shadow: inset 0 0 0 2px var(--ds-border-focused, #579dff) !important;
+  border: 2px solid var(--ds-border-focused, #579dff) !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
 /* ============================================

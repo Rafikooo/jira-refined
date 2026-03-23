@@ -100,11 +100,17 @@
     currentIndex = index % cards.length;
     const card = cards[currentIndex];
 
+    // Remove previous highlights
     document
       .querySelectorAll(".jr-search-highlight")
       .forEach((el) => el.classList.remove("jr-search-highlight"));
 
-    card.classList.add("jr-search-highlight");
+    // Target the innermost visible card element
+    const inner =
+      card.querySelector('[data-testid="software-backlog.card-list.card.card-contents.card"]') ||
+      card.querySelector('[data-testid*="card-contents"]') ||
+      card;
+    inner.classList.add("jr-search-highlight");
     card.scrollIntoView({ behavior: "smooth", block: "center" });
 
     updateCounter();
