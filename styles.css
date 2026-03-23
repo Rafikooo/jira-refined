@@ -75,6 +75,17 @@ tr:hover .jp-report-btns .jp-copy-btn {
   opacity: 1 !important;
 }
 
+.jp-report-sep {
+  color: var(--ds-text-subtlest, #8993a4);
+  opacity: 0;
+  font-size: 12px;
+  user-select: none;
+}
+
+tr:hover .jp-report-sep {
+  opacity: 0.3;
+}
+
 /* Issue detail view copy buttons */
 .jp-copy-detail {
   opacity: 0;

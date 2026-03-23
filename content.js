@@ -47,6 +47,16 @@
     return navigator.clipboard.write([item]).catch(() => fallbackCopy(plain));
   }
 
+  function copyAsTableRow(issueKey, url, title) {
+    const html = `<table><tr><td><a href="${url}">${issueKey}</a></td><td>${title}</td></tr></table>`;
+    const plain = `${issueKey}\t${title}`;
+    const item = new ClipboardItem({
+      "text/html": new Blob([html], { type: "text/html" }),
+      "text/plain": new Blob([plain], { type: "text/plain" }),
+    });
+    return navigator.clipboard.write([item]).catch(() => fallbackCopy(plain));
+  }
+
   function fallbackCopy(text) {
     const ta = document.createElement("textarea");
     ta.value = text;
@@ -202,13 +212,22 @@
       wrapper.className = "jp-report-btns";
 
       const linkBtn = createCopyBtn(() => copyRichLink(issueKey, url));
-      linkBtn.title = issueKey;
+      linkBtn.title = "Copy link";
+
+      const sep = document.createElement("span");
+      sep.className = "jp-report-sep";
+      sep.textContent = "|";
 
       const titleBtn = createCopyBtn(() => copyPlainText(summary));
       titleBtn.title = "Copy title";
 
+      const tableBtn = createCopyBtn(() => copyAsTableRow(issueKey, url, summary));
+      tableBtn.title = "Copy as table row";
+
       wrapper.appendChild(linkBtn);
+      wrapper.appendChild(sep);
       wrapper.appendChild(titleBtn);
+      wrapper.appendChild(tableBtn);
       keyCell.prepend(wrapper);
     }
   }
