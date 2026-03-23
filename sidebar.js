@@ -133,6 +133,10 @@
 
     if (spacesBtn) {
       attachSpacesToggle(spacesBtn);
+      // JS backup: click to collapse if CSS didn't hide it
+      if (spacesBtn.getAttribute("aria-expanded") === "true") {
+        spacesBtn.click();
+      }
     }
 
     // Look for Starred button to inject items
@@ -197,7 +201,14 @@
       const container = document.querySelector(SPACES_CONTAINER_SELECTOR);
       if (container) container.classList.remove("jr-user-expanded");
       spacesListenerAttached = false;
-      // MutationObserver will handle re-injection when React re-renders
+
+      // JS backup: collapse Spaces after navigation
+      setTimeout(() => {
+        const btn = document.querySelector(SPACES_BTN_SELECTOR);
+        if (btn?.getAttribute("aria-expanded") === "true") {
+          btn.click();
+        }
+      }, 300);
     }
   }, 200);
 })();
