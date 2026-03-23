@@ -44,18 +44,16 @@
   }
 
   function createCounter(input) {
-    if (counterEl && counterEl.isConnected) return counterEl;
-    counterEl = null;
+    // Remove ALL existing counters to prevent duplicates
+    document.querySelectorAll(".jr-search-counter").forEach((el) => el.remove());
 
     counterEl = document.createElement("span");
     counterEl.className = "jr-search-counter";
 
-    // Insert after the search wrapper, before the avatar row
     const wrapper = getSearchWrapper(input);
     if (wrapper?.nextElementSibling) {
       wrapper.insertAdjacentElement("afterend", counterEl);
     } else {
-      // Fallback: insert directly after input's container
       input.parentElement.insertAdjacentElement("afterend", counterEl);
     }
     return counterEl;
@@ -197,8 +195,15 @@
     }
 
     if (!isBacklogPage()) return;
+
+    // Detect if Jira re-rendered the input (loses our jrEnhanced flag)
+    const input = getSearchInput();
+    if (initialized && input && !input.dataset.jrEnhanced) {
+      initialized = false;
+    }
+
     if (initialized) return;
-    if (getSearchInput()) init();
+    if (input) init();
   });
 
   domObserver.observe(document.documentElement, {
