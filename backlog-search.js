@@ -181,6 +181,7 @@
 
   let lastUrl = location.href;
 
+  // MutationObserver for early detection
   const domObserver = new MutationObserver(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
@@ -198,4 +199,17 @@
     childList: true,
     subtree: true,
   });
+
+  // Backup polling - MutationObserver may miss if DOM already built
+  setInterval(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      counterEl = null;
+      currentIndex = -1;
+      initialized = false;
+    }
+    if (!isBacklogPage()) return;
+    if (initialized) return;
+    if (getSearchInput()) init();
+  }, 1000);
 })();
