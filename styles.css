@@ -86,6 +86,14 @@ tr:hover .jp-report-sep {
   opacity: 0.3;
 }
 
+/* Progress spacer between processed/unprocessed rows */
+.jp-report-spacer td {
+  height: 3px;
+  background: var(--ds-border-focused, #579dff);
+  opacity: 0.4;
+  padding: 0 !important;
+}
+
 /* Issue detail view copy buttons */
 .jp-copy-detail {
   opacity: 0;

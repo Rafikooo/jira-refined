@@ -195,8 +195,57 @@
 
   // ── Sprint report table copy buttons ─────────────────
 
+  const SPACER_CLASS = "jp-report-spacer";
+  const SPACER_STORAGE_KEY = "jr-report-spacer";
+
+  function moveSpacerAfterRow(row) {
+    // Remove existing spacer
+    document.querySelectorAll(`.${SPACER_CLASS}`).forEach((s) => s.remove());
+
+    // Insert spacer after this row
+    const spacer = document.createElement("tr");
+    spacer.className = SPACER_CLASS;
+    const td = document.createElement("td");
+    td.colSpan = 99;
+    spacer.appendChild(td);
+    row.insertAdjacentElement("afterend", spacer);
+
+    // Persist position by issue key
+    const link = row.querySelector('a[href*="/browse/"]');
+    if (link) {
+      try {
+        localStorage.setItem(
+          SPACER_STORAGE_KEY,
+          JSON.stringify({
+            key: link.textContent.trim(),
+            url: window.location.href.split("?")[0],
+          })
+        );
+      } catch {}
+    }
+  }
+
+  function restoreSpacerPosition() {
+    try {
+      const raw = localStorage.getItem(SPACER_STORAGE_KEY);
+      if (!raw) return;
+      const { key, url } = JSON.parse(raw);
+      if (!window.location.href.startsWith(url)) return;
+
+      const rows = document.querySelectorAll("table tr");
+      for (const row of rows) {
+        const link = row.querySelector('a[href*="/browse/"]');
+        if (link?.textContent.trim() === key) {
+          moveSpacerAfterRow(row);
+          return;
+        }
+      }
+    } catch {}
+  }
+
   function injectReportButtons() {
     const rows = document.querySelectorAll("table tr");
+    let injected = false;
     for (const row of rows) {
       if (row.querySelector(".jp-report-btns")) continue;
       const keyCell = row.querySelector("td:first-child");
@@ -208,20 +257,26 @@
       const summary = summaryCell?.textContent?.trim() || "";
       const url = link.href;
 
+      const onCopy = (copyFn) => () => {
+        return copyFn().then(() => moveSpacerAfterRow(row));
+      };
+
       const wrapper = document.createElement("span");
       wrapper.className = "jp-report-btns";
 
-      const linkBtn = createCopyBtn(() => copyRichLink(issueKey, url));
+      const linkBtn = createCopyBtn(onCopy(() => copyRichLink(issueKey, url)));
       linkBtn.title = "Copy link";
 
       const sep = document.createElement("span");
       sep.className = "jp-report-sep";
       sep.textContent = "|";
 
-      const titleBtn = createCopyBtn(() => copyPlainText(summary));
+      const titleBtn = createCopyBtn(onCopy(() => copyPlainText(summary)));
       titleBtn.title = "Copy title";
 
-      const tableBtn = createCopyBtn(() => copyAsTableRow(issueKey, url, summary));
+      const tableBtn = createCopyBtn(
+        onCopy(() => copyAsTableRow(issueKey, url, summary))
+      );
       tableBtn.title = "Copy as table row";
 
       wrapper.appendChild(linkBtn);
@@ -229,6 +284,12 @@
       wrapper.appendChild(sep);
       wrapper.appendChild(tableBtn);
       keyCell.prepend(wrapper);
+      injected = true;
+    }
+
+    // Restore spacer from localStorage on first injection
+    if (injected && !document.querySelector(`.${SPACER_CLASS}`)) {
+      restoreSpacerPosition();
     }
   }
 
