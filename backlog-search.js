@@ -48,8 +48,8 @@
 
     counterEl = document.createElement("span");
     counterEl.className = "jr-search-counter";
-    wrapper.style.position = "relative";
-    wrapper.appendChild(counterEl);
+    // Insert after the search wrapper, before the avatar row
+    wrapper.insertAdjacentElement("afterend", counterEl);
     return counterEl;
   }
 
@@ -111,8 +111,10 @@
     input.dataset.jrEnhanced = "true";
     initialized = true;
 
-    // Change placeholder
-    input.setAttribute("placeholder", "Press 'f' to search");
+    // Change placeholder and widen input
+    input.setAttribute("placeholder", "Press 'f' to search, 'esc' to clear");
+    const wrapper = getSearchWrapper(input);
+    if (wrapper) wrapper.style.minWidth = "280px";
 
     let debounce = null;
     input.addEventListener("input", () => {
@@ -125,6 +127,18 @@
     });
 
     input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.blur();
+        document
+          .querySelectorAll(".jr-search-highlight")
+          .forEach((el) => el.classList.remove("jr-search-highlight"));
+        currentIndex = -1;
+        updateCounter();
+        return;
+      }
+
       if (e.key === "Enter") {
         e.preventDefault();
         e.stopPropagation();

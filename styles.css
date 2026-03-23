@@ -154,18 +154,14 @@ body.jr-scraping [class*="layered"] {
   display: none;
   align-items: center;
   justify-content: center;
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 1px 6px;
+  padding: 4px 8px;
   border-radius: 3px;
   background: var(--ds-background-neutral, #2c333a);
   color: var(--ds-text-subtlest, #8993a4);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  pointer-events: none;
-  z-index: 1;
+  white-space: nowrap;
+  margin-left: 8px;
 }
 
 .jr-search-counter-zero {
@@ -174,9 +170,8 @@ body.jr-scraping [class*="layered"] {
 
 /* Highlight for currently navigated search result */
 .jr-search-highlight {
-  outline: 2px solid var(--ds-border-focused, #579dff) !important;
-  outline-offset: -2px;
-  border-radius: 3px;
+  background: var(--ds-background-selected, rgba(87, 157, 255, 0.12)) !important;
+  box-shadow: inset 3px 0 0 var(--ds-border-focused, #579dff) !important;
 }
 
 /* ============================================
