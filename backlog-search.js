@@ -143,7 +143,6 @@
       if (e.key === "Escape") {
         input.value = "";
         input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.blur();
         document
           .querySelectorAll(".jr-search-highlight")
           .forEach((el) => el.classList.remove("jr-search-highlight"));
