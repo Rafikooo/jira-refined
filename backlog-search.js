@@ -8,6 +8,7 @@
 
   let counterEl = null;
   let currentIndex = -1;
+  let initialized = false;
 
   function isBacklogPage() {
     return window.location.href.includes("/backlog");
@@ -22,7 +23,8 @@
   }
 
   function createCounter() {
-    if (counterEl) return counterEl;
+    if (counterEl && counterEl.isConnected) return counterEl;
+    counterEl = null;
 
     const wrapper = document.querySelector(SEARCH_FIELD_SELECTOR);
     if (!wrapper) return null;
@@ -55,7 +57,6 @@
       counter.textContent = "0";
       counter.classList.add("jr-search-counter-zero");
     } else {
-      // Clamp currentIndex
       if (currentIndex < 0 || currentIndex >= cards.length) {
         currentIndex = -1;
       }
@@ -74,12 +75,10 @@
     currentIndex = index % cards.length;
     const card = cards[currentIndex];
 
-    // Remove previous highlight
     document
       .querySelectorAll(".jr-search-highlight")
       .forEach((el) => el.classList.remove("jr-search-highlight"));
 
-    // Highlight and scroll
     card.classList.add("jr-search-highlight");
     card.scrollIntoView({ behavior: "smooth", block: "center" });
 
@@ -93,8 +92,8 @@
     if (!input) return;
     if (input.dataset.jrEnhanced) return;
     input.dataset.jrEnhanced = "true";
+    initialized = true;
 
-    // Update counter on input changes
     let debounce = null;
     input.addEventListener("input", () => {
       currentIndex = -1;
@@ -102,11 +101,9 @@
         .querySelectorAll(".jr-search-highlight")
         .forEach((el) => el.classList.remove("jr-search-highlight"));
       if (debounce) clearTimeout(debounce);
-      // Delay to let Jira filter the list first
       debounce = setTimeout(updateCounter, 400);
     });
 
-    // Enter to navigate between results
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -115,11 +112,9 @@
         if (cards.length === 0) return;
 
         if (e.shiftKey) {
-          // Shift+Enter = previous
           currentIndex =
             currentIndex <= 0 ? cards.length - 1 : currentIndex - 1;
         } else {
-          // Enter = next
           currentIndex =
             currentIndex >= cards.length - 1 ? 0 : currentIndex + 1;
         }
@@ -127,7 +122,6 @@
       }
     });
 
-    // Also watch for DOM changes (Jira re-renders list on filter)
     const scrollable = document.querySelector(
       '[data-testid="software-backlog.backlog-content.scrollable"]'
     );
@@ -142,26 +136,29 @@
     }
   }
 
-  // SPA navigation support
-  let lastUrl = "";
-  const navObserver = new MutationObserver(() => {
-    if (window.location.href !== lastUrl) {
-      lastUrl = window.location.href;
+  // Watch for DOM changes from document_start - retry until search field appears
+  let lastUrl = location.href;
+
+  const domObserver = new MutationObserver(() => {
+    // URL change detection
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
       counterEl = null;
       currentIndex = -1;
-      if (isBacklogPage()) {
-        setTimeout(init, 1000);
-      }
+      initialized = false;
+    }
+
+    if (!isBacklogPage()) return;
+    if (initialized) return;
+
+    // Try to init when search field appears in DOM
+    if (getSearchInput()) {
+      init();
     }
   });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      setTimeout(init, 1000);
-      navObserver.observe(document.body, { childList: true, subtree: true });
-    });
-  } else {
-    setTimeout(init, 1000);
-    navObserver.observe(document.body, { childList: true, subtree: true });
-  }
+  domObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
 })();
