@@ -145,6 +145,8 @@
     input.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         input.value = "";
         input.dispatchEvent(new Event("input", { bubbles: true }));
         document
@@ -152,7 +154,10 @@
           .forEach((el) => el.classList.remove("jr-search-highlight"));
         currentIndex = -1;
         updateCounter();
-        input.focus();
+        // Jira steals focus on Escape - fight back with multiple retries
+        setTimeout(() => input.focus(), 0);
+        setTimeout(() => input.focus(), 100);
+        setTimeout(() => input.focus(), 300);
         return;
       }
 
