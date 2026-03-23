@@ -3,8 +3,6 @@
 
   const CARD_SELECTOR =
     '[data-testid^="software-backlog.card-list.card.content-container"]';
-  const SEARCH_FIELD_SELECTOR =
-    '[data-testid="software-filters.ui.stateless.search-field"]';
 
   let counterEl = null;
   let currentIndex = -1;
@@ -15,18 +13,37 @@
   }
 
   function getSearchInput() {
-    return document.querySelector(`${SEARCH_FIELD_SELECTOR} input`);
+    // Try multiple selectors - testid may vary between instances
+    return (
+      document.querySelector(
+        '[data-testid="software-filters.ui.stateless.search-field"] input'
+      ) ||
+      document.querySelector(
+        'input[placeholder="Search backlog"]'
+      ) ||
+      document.querySelector(
+        'input[placeholder*="backlog" i]'
+      )
+    );
+  }
+
+  function getSearchWrapper(input) {
+    return (
+      input.closest('[data-testid="software-filters.ui.stateless.search-field"]') ||
+      input.closest('[role="search"]') ||
+      input.parentElement
+    );
   }
 
   function getVisibleCards() {
     return document.querySelectorAll(CARD_SELECTOR);
   }
 
-  function createCounter() {
+  function createCounter(input) {
     if (counterEl && counterEl.isConnected) return counterEl;
     counterEl = null;
 
-    const wrapper = document.querySelector(SEARCH_FIELD_SELECTOR);
+    const wrapper = getSearchWrapper(input);
     if (!wrapper) return null;
 
     counterEl = document.createElement("span");
@@ -40,7 +57,7 @@
     const input = getSearchInput();
     if (!input) return;
 
-    const counter = createCounter();
+    const counter = createCounter(input);
     if (!counter) return;
 
     const query = input.value.trim();
@@ -94,6 +111,9 @@
     input.dataset.jrEnhanced = "true";
     initialized = true;
 
+    // Change placeholder
+    input.setAttribute("placeholder", "Press 'f' to search");
+
     let debounce = null;
     input.addEventListener("input", () => {
       currentIndex = -1;
@@ -136,11 +156,9 @@
     }
   }
 
-  // Watch for DOM changes from document_start - retry until search field appears
   let lastUrl = location.href;
 
   const domObserver = new MutationObserver(() => {
-    // URL change detection
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       counterEl = null;
@@ -150,11 +168,7 @@
 
     if (!isBacklogPage()) return;
     if (initialized) return;
-
-    // Try to init when search field appears in DOM
-    if (getSearchInput()) {
-      init();
-    }
+    if (getSearchInput()) init();
   });
 
   domObserver.observe(document.documentElement, {
