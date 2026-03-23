@@ -111,10 +111,11 @@
     input.dataset.jrEnhanced = "true";
     initialized = true;
 
-    // Change placeholder and widen input
+    // Change placeholder, widen input, auto-focus
     input.setAttribute("placeholder", "Press 'f' to search, 'esc' to clear");
     const wrapper = getSearchWrapper(input);
     if (wrapper) wrapper.style.minWidth = "280px";
+    input.focus();
 
     let debounce = null;
     input.addEventListener("input", () => {
