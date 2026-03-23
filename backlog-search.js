@@ -13,22 +13,23 @@
   }
 
   function getSearchInput() {
-    // Try multiple selectors - testid and placeholder vary between instances
+    // Try multiple selectors scoped to the backlog content area
+    const backlog = document.querySelector(
+      '[data-testid="software-backlog.backlog"]'
+    ) || document.querySelector('[data-testid*="backlog"]') || document;
+
     return (
-      document.querySelector(
+      backlog.querySelector(
         '[data-testid="software-filters.ui.stateless.search-field"] input'
       ) ||
-      document.querySelector(
+      backlog.querySelector(
         '[data-testid*="search-field"] input'
       ) ||
-      document.querySelector(
+      backlog.querySelector(
         'input[placeholder="Search backlog"]'
       ) ||
-      document.querySelector(
+      backlog.querySelector(
         'input[placeholder*="backlog" i]'
-      ) ||
-      document.querySelector(
-        'input[placeholder*="search" i]'
       )
     );
   }
