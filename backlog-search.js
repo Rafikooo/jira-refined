@@ -13,22 +13,18 @@
   }
 
   function getSearchInput() {
-    // Try multiple selectors scoped to the backlog content area
-    const backlog = document.querySelector(
-      '[data-testid="software-backlog.backlog"]'
-    ) || document.querySelector('[data-testid*="backlog"]') || document;
-
+    // Input may have data-testid directly OR be a child of a testid container
     return (
-      backlog.querySelector(
+      document.querySelector(
+        'input[data-testid="software-filters.ui.stateless.search-field"]'
+      ) ||
+      document.querySelector(
         '[data-testid="software-filters.ui.stateless.search-field"] input'
       ) ||
-      backlog.querySelector(
-        '[data-testid*="search-field"] input'
-      ) ||
-      backlog.querySelector(
+      document.querySelector(
         'input[placeholder="Search backlog"]'
       ) ||
-      backlog.querySelector(
+      document.querySelector(
         'input[placeholder*="backlog" i]'
       )
     );
@@ -36,6 +32,7 @@
 
   function getSearchWrapper(input) {
     return (
+      input.closest('[data-testid="software-filters.ui.stateless.search-field-container"]') ||
       input.closest('[data-testid="software-filters.ui.stateless.search-field"]') ||
       input.closest('[role="search"]') ||
       input.parentElement
