@@ -24,7 +24,7 @@
     return `${window.location.origin}/browse/${issueKey}`;
   }
 
-  const FONT = 'style="font-size:16pt;mso-bidi-font-size:16pt;font-family:Calibri,sans-serif;mso-fareast-font-family:Calibri;margin:0;padding:0"';
+  const FONT = 'style="font-size:12pt;mso-bidi-font-size:12pt;font-family:Calibri,sans-serif;mso-fareast-font-family:Calibri;margin:0;padding:0"';
 
   function copyRichLink(issueKey, url) {
     const html = `<span ${FONT}><a href="${url}" ${FONT}>${issueKey}</a></span>`;
